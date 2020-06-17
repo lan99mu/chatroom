@@ -10,7 +10,7 @@
 #define Max_Conn_num 100
 #define MyPort 10000
 #define MaxLen 1000
-#define MyIp "127.0.0.1"
+#define MyIp "172.17.179.94"
 using namespace std;
 
 set <Client_info> client_set;//存客户端连接信息
@@ -29,6 +29,7 @@ void deleteEvent(int clientfd, int state);
 
 int main()
 {
+    daemon(0, 0);
     int sockfd = socket_init_bind();
     if(listen(sockfd, Max_Conn_num) == -1)
     {
