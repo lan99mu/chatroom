@@ -23,8 +23,9 @@ int socket_init_bind();
 void Conn(int);
 void Get_Data();
 void allSend(const char *, int&);
-void addEvent(int clientfd, int state);
-void deleteEvent(int clientfd, int state);
+void addEvent(const int&, int);
+void deleteEvent(const int&, int);
+void allnameSend(int&);
 
 
 int main()
@@ -100,7 +101,7 @@ void Conn(int sockfd)
             client_set.insert(client);
             socknum ++;
             addEvent(clientfd, EPOLLIN);
-            strcat(buffer, "join the chatroom!");
+            strcat(buffer, " join the chatroom!");
             allSend(buffer, clientfd);
         }
         else 
@@ -134,6 +135,7 @@ void Get_Data()//处理客户端发送来的数据
                         if(it.getclientfd() == clientfd)
                         {
                             client_set.erase(it);
+                            socknum --;
                             break;
                         }
                     }
@@ -142,6 +144,11 @@ void Get_Data()//处理客户端发送来的数据
                 {
                     buffer[len] = '\0';
                     string message = buffer;
+                    if(message == "gln")
+                    {
+                        allnameSend(clientfd);
+                        continue;
+                    }
                     vector <string> vs;//存分割后的字符串数组
                     string name;//用户昵称
                     for(auto it : client_set)//根据套接字描述符找到对应的昵称
@@ -170,6 +177,7 @@ void Get_Data()//处理客户端发送来的数据
                                     perror("send is error");
                                     deleteEvent(it.getclientfd(), EPOLLIN);
                                     client_set.erase(it);
+                                    socknum --;
                                 }
                                 break;
                             }
@@ -182,7 +190,7 @@ void Get_Data()//处理客户端发送来的数据
     }
 }
 
-void allSend(const char * buffer, int &clientfd)
+void allSend(const char * buffer, int &clientfd)//群发，对每个当前在线用户都发送消息
 {
     if(buffer[0] == '\0')
         return ;
@@ -195,6 +203,7 @@ void allSend(const char * buffer, int &clientfd)
             perror("send is error");
             deleteEvent(it.getclientfd(), EPOLLIN);//直接删除会导致迭代器失效
             delete_set.push_back(it);
+            socknum --;
         }
     }
     for(auto it : delete_set)//删除刚才纪录的迭代器
@@ -202,7 +211,26 @@ void allSend(const char * buffer, int &clientfd)
     delete_set.clear();
 }
 
-void addEvent(int clientfd, int state)//添加事件
+void allnameSend(int& clientfd)//获取当前在线人员的名单
+{
+    string names = "";
+    Client_info client;
+    for(auto it : client_set)//将所有的昵称整合成一个串
+    {
+        if(it.getclientfd() == clientfd)
+            client = it;
+        names += it.getname() + "@";
+    }
+    if(send(clientfd, names.c_str(), names.size(), 0) == -1)
+    {
+        perror("send is error");
+        deleteEvent(clientfd, EPOLLIN);
+        client_set.erase(client);   
+        socknum --;
+    }
+}
+
+void addEvent(const int& clientfd, int state)//添加事件
 {
     struct epoll_event ev;
     ev.events = state;
@@ -210,7 +238,7 @@ void addEvent(int clientfd, int state)//添加事件
     epoll_ctl(epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 }
 
-void deleteEvent(int clientfd, int state)//删除事件
+void deleteEvent(const int& clientfd, int state)//删除事件
 {
     struct epoll_event ev;
     close(clientfd);

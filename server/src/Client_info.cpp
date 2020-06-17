@@ -1,6 +1,6 @@
 #include "Client_info.h"
 //默认构造函数
-Client_info::Client_info(std::string name = "", int fd = 0) : virname(name), client_fd(fd) 
+Client_info::Client_info(std::string name, int fd) : virname(name), client_fd(fd) 
 {
 
 }

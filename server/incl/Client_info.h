@@ -9,7 +9,7 @@ class Client_info
         int client_fd;//客户段套接字id
     public:
         //默认构造函数
-        Client_info(std::string name, int fd);
+        Client_info(std::string name = "", int fd = 0);
         //拷贝构造函数
         Client_info(const Client_info& p);
         //析构函数
