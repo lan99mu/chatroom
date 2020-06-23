@@ -86,8 +86,10 @@ void Conn(int sockfd)
         }
         if(socknum < Max_Conn_num)
         {
-            char buffer[MaxLen] = "this is chatroom";
-            send(clientfd, buffer, strlen(buffer), 0);
+            string msg = "This is ChatRoom!", bits = "";
+            Tools::string_to_bits(msg, bits);
+            send(clientfd, bits.c_str(), bits.size(), 0);
+            char buffer[MaxLen];
             memset(buffer, 0, sizeof(buffer));
             int len = recv(clientfd, buffer, MaxLen, 0);
             if(len < 0)
@@ -96,18 +98,21 @@ void Conn(int sockfd)
                 continue;
             }
             buffer[len] = '\0';
-            string name = buffer;
-            Client_info client(name, clientfd);
+            bits = buffer;
+            Tools::bits_to_string(bits, msg);
+            Client_info client(msg, clientfd);
             client_set.insert(client);
             socknum ++;
             addEvent(clientfd, EPOLLIN);
-            strcat(buffer, " join the chatroom!");
-            allSend(buffer, clientfd);
+            msg += " join the chatroom!";
+            Tools::string_to_bits(msg, bits);
+            allSend(bits.c_str(), clientfd);
         }
         else 
         {
-            char buffer[] = "Sorry,chatroom already expired\n";
-            send(clientfd, buffer, strlen(buffer), 0);
+            string msg = "Sorry,ChatRoom already expired", bits = "";
+            Tools::string_to_bits(msg, bits);
+            send(clientfd, bits.c_str(), bits.size(), 0);
             close(clientfd);
         }
     }
@@ -143,7 +148,8 @@ void Get_Data()//处理客户端发送来的数据
                 else 
                 {
                     buffer[len] = '\0';
-                    string message = buffer;
+                    string bits = buffer, message;
+                    Tools::bits_to_string(bits, message);
                     if(message == "gln")
                     {
                         allnameSend(clientfd);
@@ -163,16 +169,18 @@ void Get_Data()//处理客户端发送来的数据
                     if(vs.size() == 1)//没有指定用户，故群发
                     {
                         message = name + ":" + message;
-                        allSend(message.c_str(), clientfd);
+                        Tools::string_to_bits(message, bits);
+                        allSend(bits.c_str(), clientfd);
                     }
                     else 
                     {
                         message = name + ":" + vs[0];
+                        Tools::string_to_bits(message, bits);
                         for(auto it : client_set)//根据昵称找到对应客户端套接字描述符
                         {
                             if(it.getname() == vs[1])
                             {
-                                if(send(it.getclientfd(), message.c_str(), message.size(), 0) == -1)
+                                if(send(it.getclientfd(), bits.c_str(), bits.size(), 0) == -1)
                                 {
                                     perror("send is error");
                                     deleteEvent(it.getclientfd(), EPOLLIN);
