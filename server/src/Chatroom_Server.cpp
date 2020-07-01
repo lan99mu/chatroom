@@ -43,11 +43,7 @@ int main()
     t_conn.detach();
     thread t_getdata(Get_Data);
     t_getdata.detach();
-    while(true)
-    {
-        //死循环保存主线程不退出
-    }
-    return 0;
+    pthread_exit(NULL);//使其他线程不退出
 }
 
 int socket_init_bind()//建立最初的套接字，且绑定端口跟ip

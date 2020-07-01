@@ -74,6 +74,7 @@ void SendMsg(int sockfd)
     while(true)
     {
         string msg, bits = "";
+        cout << name << ":";
         cin >> msg;      
         Tools::string_to_bits(msg, bits);//将字符流转换成比特流
         if(send(sockfd, bits.c_str(), bits.size(), 0) == -1)
