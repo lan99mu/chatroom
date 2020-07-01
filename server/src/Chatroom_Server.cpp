@@ -6,6 +6,7 @@
 #include <sys/epoll.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <mutex>
 
 #define Max_Conn_num 100
 #define MyPort 10000
@@ -18,6 +19,7 @@ vector <Client_info> delete_set;//存要被删除的迭代器
 int epollfd = epoll_create(Max_Conn_num);//创建epoll
 struct epoll_event events[Max_Conn_num];
 int socknum = 0;
+mutex g_mutex;//互斥锁
 
 int socket_init_bind();
 void Conn(int);
@@ -101,8 +103,10 @@ void Conn(int sockfd)
             bits = buffer;
             Tools::bits_to_string(bits, msg);
             Client_info client(msg, clientfd);
+            g_mutex.lock();//对set操作进行加锁
             client_set.insert(client);
             socknum ++;
+            g_mutex.unlock();//解锁
             addEvent(clientfd, EPOLLIN);
             msg += " join the chatroom!";
             Tools::string_to_bits(msg, bits);
@@ -139,8 +143,10 @@ void Get_Data()//处理客户端发送来的数据
                     {
                         if(it.getclientfd() == clientfd)
                         {
+                            g_mutex.lock();
                             client_set.erase(it);
                             socknum --;
+                            g_mutex.unlock();
                             break;
                         }
                     }
@@ -184,8 +190,10 @@ void Get_Data()//处理客户端发送来的数据
                                 {
                                     perror("send is error");
                                     deleteEvent(it.getclientfd(), EPOLLIN);
+                                    g_mutex.lock();
                                     client_set.erase(it);
                                     socknum --;
+                                    g_mutex.unlock();
                                 }
                                 break;
                             }
@@ -211,11 +219,15 @@ void allSend(const char * buffer, int &clientfd)//群发，对每个当前在线
             perror("send is error");
             deleteEvent(it.getclientfd(), EPOLLIN);//直接删除会导致迭代器失效
             delete_set.push_back(it);
-            socknum --;
         }
     }
     for(auto it : delete_set)//删除刚才纪录的迭代器
+    {
+        g_mutex.lock();
         client_set.erase(it);
+        socknum --;
+        g_mutex.unlock();
+    }
     delete_set.clear();
 }
 
@@ -233,8 +245,10 @@ void allnameSend(int& clientfd)//获取当前在线人员的名单
     {
         perror("send is error");
         deleteEvent(clientfd, EPOLLIN);
+        g_mutex.lock();
         client_set.erase(client);   
         socknum --;
+        g_mutex.unlock();
     }
 }
 
