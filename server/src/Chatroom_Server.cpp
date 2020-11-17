@@ -11,7 +11,8 @@
 #define Max_Conn_num 100
 #define MyPort 10000
 #define MaxLen 1000
-#define MyIp "172.17.179.94"
+//需要你的服务端内网ip
+#define MyIp "*.*.*.*"
 using namespace std;
 
 set <Client_info> client_set;//存客户端连接信息

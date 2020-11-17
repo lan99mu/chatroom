@@ -8,7 +8,8 @@ using namespace std;
 
 #define Port 10000
 #define MaxLen 1000
-#define Ip "47.94.45.86"
+//服务端的公网ip
+#define Ip "*.*.*.*"
 
 string name = "";
 void RecvMsg(int sockfd);
